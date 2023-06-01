@@ -32,7 +32,7 @@ When both applications are built and running, open your browser on http://localh
 docker build -t client ./client
 ```
 ```
-docker run -dt -p 80:8080 client
+docker run -dt -p 8080:8080 client
 ```
 ### server
 
@@ -40,7 +40,7 @@ docker run -dt -p 80:8080 client
 docker build -t server ./server
 ``` 
 ```
-docker run -p 5200:5200 server
+docker run -dt -p 5200:5200 server
 ```
 
 ## Disclaimer
