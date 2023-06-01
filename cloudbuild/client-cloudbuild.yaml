@@ -1,0 +1,55 @@
+steps:
+
+#pull previous image to speed up docker build
+# - name: "gcr.io/cloud-builders/docker"
+#   id: "Pull"
+#   entrypoint: "bash"
+#   args:
+#       - "-c"
+#       - |
+#         docker pull us-central1-docker.pkg.dev/backend:latest || exit 0
+
+#Build the Docker image with latest and short sha tags
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t', 'us-central1-docker.pkg.dev/frontend:$SHORT_SHA',
+    '-t', 'us-central1-docker.pkg.dev/frontend:latest',
+    './frontend'
+  ]
+
+# Push the Docker image with short sha tag to GCR
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'push',
+    'us-central1-docker.pkg.dev/frontend:$SHORT_SHA'
+  ]
+
+# Deploy the Docker image to GKE with short sha tag
+- name: 'gcr.io/cloud-builders/gke-deploy'
+  args: [
+    'run', 
+    '-f', './kubernetes_manifests/client-deployment.yaml',
+    '-i', 'us-central1-docker.pkg.dev/frontend:$SHORT_SHA',
+    '-l', 'us-central1-c', 
+    '-c', 'cluster-1'
+  ]
+
+# Wait for deployment rollout status
+- name: 'gcr.io/cloud-builders/kubectl'
+  args: [
+    'rollout', 
+    'status', 
+    'deployment/frontend', 
+    '-n', 'default', 
+    '--watch=true'
+    ]
+  env:
+    - 'CLOUDSDK_COMPUTE_ZONE=us-central1-c'
+    - 'CLOUDSDK_CONTAINER_CLUSTER=cluster-1'
+
+images:
+- 'us-central1-docker.pkg.dev/frontend:$SHORT_SHA'
+- 'us-central1-docker.pkg.dev/frontend:latest'
+
+timeout: 900s
